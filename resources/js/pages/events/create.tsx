@@ -134,7 +134,7 @@ export default function CreateEvent() {
                     </div>
 
                 <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-                    <Link href="/dashboard" className="rounded-md border border-[#4a3c62] px-3 py-2 text-sm font-semibold text-[#e8d8ff] hover:bg-[#302643]">Anuluj</Link>
+                    <Link href="/events" className="rounded-md border border-[#4a3c62] px-3 py-2 text-sm font-semibold text-[#e8d8ff] hover:bg-[#302643]">Anuluj</Link>
                     <Button type="submit" disabled={form.processing} className="bg-[#ddc5ff] font-bold text-[#241738] hover:bg-[#ebdbff]">
                         {form.processing ? 'Zapisywanie…' : 'Utwórz wydarzenie'}
                     </Button>

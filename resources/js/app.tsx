@@ -63,7 +63,7 @@ void createInertiaApp({
                                 <span aria-hidden="true" className="grid size-8 place-items-center rounded-xl bg-[#ddc5ff] text-[#201632]">✦</span>
                                 Razem Wieczorem
                             </Link>
-                            <Link href="/dashboard" className="text-sm font-semibold text-[#ddc5ff] hover:text-[#f6f1ff]">Moje wydarzenia</Link>
+                            <Link href="/events" className="text-sm font-semibold text-[#ddc5ff] hover:text-[#f6f1ff]">Moje wydarzenia</Link>
                             <Link href="/events/create" className="text-sm font-semibold text-[#ddc5ff] hover:text-[#f6f1ff]">
                                 Utwórz nowe
                             </Link>

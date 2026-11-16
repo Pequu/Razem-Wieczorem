@@ -10,4 +10,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::inertia('/events/create', 'events/create')->name('events.create');
 
+Route::inertia('/events', 'events/index')->name('events.index');
+
 require __DIR__.'/settings.php';
