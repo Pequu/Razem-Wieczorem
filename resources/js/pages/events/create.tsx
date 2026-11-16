@@ -159,11 +159,14 @@ export default function CreateEvent() {
                                                     required
                                                     aria-invalid={!!error}
                                                     aria-describedby={error ? `${id}-error` : undefined}
-                                                    onChange={(event) => {
-                                                        const value = event.target.value;
-                                                        form.setData('terms', form.data.terms.map((item) =>
-                                                            item.id === term.id ? { ...item, [name]: value } : item,
-                                                        ));
+                                                    onInput={(event) => {
+                                                        const value = event.currentTarget.value;
+                                                        form.setData((current) => ({
+                                                            ...current,
+                                                            terms: current.terms.map((item) =>
+                                                                item.id === term.id ? { ...item, [name]: value } : item,
+                                                            ),
+                                                        }));
                                                     }}
                                                 />
                                                 <InputError id={`${id}-error`} message={error} />
@@ -179,7 +182,10 @@ export default function CreateEvent() {
                                         aria-label={`Usuń termin ${index + 1}`}
                                         onClick={() => {
                                             form.clearErrors();
-                                            form.setData('terms', form.data.terms.filter((item) => item.id !== term.id));
+                                            form.setData((current) => ({
+                                                ...current,
+                                                terms: current.terms.filter((item) => item.id !== term.id),
+                                            }));
                                         }}
                                     >
                                         <Trash2 aria-hidden="true" />
@@ -192,7 +198,11 @@ export default function CreateEvent() {
                             type="button"
                             variant="outline" className="ml-auto flex border-[#4a3c62] bg-[#251e39] text-[#e8d8ff] hover:bg-[#302643] dark:border-[#4a3c62] dark:bg-[#251e39]"
                             onClick={() => {
-                                form.setData('terms', [...form.data.terms, emptyTerm(nextTermId.current++)]);
+                                const term = emptyTerm(nextTermId.current++);
+                                form.setData((current) => ({
+                                    ...current,
+                                    terms: [...current.terms, term],
+                                }));
                             }}
                         >
                             <Plus aria-hidden="true" />
@@ -207,4 +217,6 @@ export default function CreateEvent() {
         </div>
     );
 }
+
+CreateEvent.layout = [];
 
