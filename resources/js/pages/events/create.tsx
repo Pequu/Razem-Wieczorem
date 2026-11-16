@@ -64,7 +64,7 @@ export default function CreateEvent() {
     }
 
     return (
-        <div className="min-h-screen bg-[#121121] text-[#f6f1ff] [color-scheme:dark]">
+        <div className="flex min-w-0 flex-col bg-[#121121] text-[#f6f1ff] [color-scheme:dark]">
             <header className="border-b border-[#29243d] bg-[#171526]">
                 <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-6 py-4">
                     <Link href="/" className="flex items-center gap-2 font-bold">
@@ -75,7 +75,7 @@ export default function CreateEvent() {
                     <span className="ml-auto text-sm text-[#c6bad9]">Organizator</span>
                 </div>
             </header>
-            <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:py-10">
+            <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8 sm:py-10">
             <Head title="Utwórz wydarzenie" />
             <p className="mb-2 text-xs font-bold tracking-[0.18em] text-[#d8b9ff] uppercase">Tworzenie wydarzenia</p>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Zaplanuj wspólny wieczór</h1>
@@ -219,4 +219,5 @@ export default function CreateEvent() {
 }
 
 CreateEvent.layout = [];
+
 
