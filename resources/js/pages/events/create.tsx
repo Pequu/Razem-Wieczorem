@@ -19,7 +19,7 @@ function emptyTerm(id: number) {
 
 export default function CreateEvent() {
     const nextTermId = useRef(1);
-    const form = useForm({ name: '', description: '', terms: [emptyTerm(0)] });
+    const form = useForm({ name: '', description: '', activities: '', terms: [emptyTerm(0)] });
     const [saved, setSaved] = useState(false);
     const errors = form.errors as Record<string, string | undefined>;
 
@@ -44,9 +44,10 @@ export default function CreateEvent() {
             return;
         }
 
-        form.transform(({ name, description, terms }) => ({
+        form.transform(({ name, description, activities, terms }) => ({
             name: name.trim(),
             description: description.trim(),
+            activities: activities.split(',').map((activity) => activity.trim()).filter(Boolean),
             terms: terms.map(({ date, starts_at, ends_at }) => ({
                 date,
                 starts_at,
@@ -109,6 +110,23 @@ export default function CreateEvent() {
                             aria-describedby={errors.description ? 'event-description-error' : undefined}
                         />
                         <InputError id="event-description-error" message={errors.description} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="event-activities">Początkowe aktywności (opcjonalnie)</Label>
+                        <Input
+                            id="event-activities"
+                            placeholder="Kręgle, kino, restauracja"
+                            className="border-[#3b3152] bg-[#151225] dark:bg-[#151225]"
+                            value={form.data.activities}
+                            onChange={(event) => form.setData('activities', event.target.value)}
+                            aria-invalid={!!errors.activities}
+                            aria-describedby={errors.activities ? 'event-activities-help event-activities-error' : 'event-activities-help'}
+                        />
+                        <p id="event-activities-help" className="text-xs text-[#c6bad9]">
+                            Oddziel aktywności przecinkami.
+                        </p>
+                        <InputError id="event-activities-error" message={errors.activities} />
                     </div>
 
                 <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
