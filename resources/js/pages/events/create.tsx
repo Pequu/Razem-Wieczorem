@@ -17,6 +17,13 @@ function emptyTerm(id: number) {
     return { id, date: '', starts_at: '', ends_at: '' };
 }
 
+function localToday() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${now.getFullYear()}-${month}-${day}`;
+}
+
 export default function CreateEvent() {
     const nextTermId = useRef(1);
     const form = useForm({ name: '', description: '', activities: '', terms: [emptyTerm(0)] });
@@ -30,6 +37,13 @@ export default function CreateEvent() {
 
         if (!form.data.name.trim()) {
             form.setError('name', 'Wpisz nazwę wydarzenia.');
+            return;
+        }
+
+        const today = localToday();
+        const pastTermIndex = form.data.terms.findIndex(({ date }) => date < today);
+        if (pastTermIndex !== -1) {
+            form.setError(`terms.${pastTermIndex}.date`, 'Wybierz dzisiejszą lub przyszłą datę.');
             return;
         }
 
@@ -146,6 +160,7 @@ export default function CreateEvent() {
                                                     id={id}
                                                     type={type} className="border-[#3b3152] bg-[#151225] dark:bg-[#151225]"
                                                     value={term[name]}
+                                                    min={type === 'date' ? localToday() : undefined}
                                                     required
                                                     aria-invalid={!!error}
                                                     aria-describedby={error ? `${id}-error` : undefined}
