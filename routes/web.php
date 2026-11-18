@@ -17,7 +17,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/events', [EventController::class, 'store'])
         ->name('events.store');
 
-    Route::inertia('/events', 'events/index')
+    Route::get('/events', [EventController::class, 'index'])
         ->name('events.index');
 
     require __DIR__.'/settings.php';
