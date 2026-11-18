@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
+import EventAuthLayout from '@/layouts/auth/event-auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import { login, logout } from '@/routes';
 
@@ -44,6 +45,8 @@ void createInertiaApp({
         switch (true) {
             case name === 'welcome':
                 return null;
+            case ['auth/login', 'auth/register', 'auth/forgot-password', 'auth/reset-password'].includes(name):
+                return EventAuthLayout;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):
@@ -98,4 +101,6 @@ void createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+
 

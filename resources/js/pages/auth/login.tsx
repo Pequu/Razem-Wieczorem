@@ -20,7 +20,7 @@ type Props = {
 export default function Login({ status, canResetPassword }: Props) {
     return (
         <>
-            <Head title="Log in" />
+            <Head title="Zaloguj się" />
 
             <PasskeyVerify />
 
@@ -33,7 +33,7 @@ export default function Login({ status, canResetPassword }: Props) {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">Adres e-mail</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -49,14 +49,14 @@ export default function Login({ status, canResetPassword }: Props) {
 
                             <div className="grid gap-2">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
+                                    <Label htmlFor="password">Hasło</Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm"
+                                            className="ml-auto text-sm text-[#ddc5ff] hover:text-[#f6f1ff]"
                                             tabIndex={5}
                                         >
-                                            Forgot your password?
+                                            Nie pamiętasz hasła?
                                         </TextLink>
                                     )}
                                 </div>
@@ -66,7 +66,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     required
                                     tabIndex={2}
                                     autoComplete="current-password"
-                                    placeholder="Password"
+                                    placeholder="Hasło"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -77,25 +77,25 @@ export default function Login({ status, canResetPassword }: Props) {
                                     name="remember"
                                     tabIndex={3}
                                 />
-                                <Label htmlFor="remember">Remember me</Label>
+                                <Label htmlFor="remember">Zapamiętaj mnie</Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                className="mt-2 h-11 w-full bg-[#ddc5ff] font-bold text-[#241738] hover:bg-[#ebdbff]"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
                             >
                                 {processing && <Spinner />}
-                                Log in
+                                Zaloguj się
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
-                            Don't have an account?{' '}
+                        <div className="text-center text-sm text-[#c6bad9]">
+                            Nie masz jeszcze konta?{' '}
                             <TextLink href={register()} tabIndex={5}>
-                                Sign up
+                                Zarejestruj się
                             </TextLink>
                         </div>
                     </>
@@ -112,6 +112,8 @@ export default function Login({ status, canResetPassword }: Props) {
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
+    title: 'Zaloguj się',
+    description: 'Zaloguj się, aby zaplanować wspólny wieczór.',
 };
+
+
