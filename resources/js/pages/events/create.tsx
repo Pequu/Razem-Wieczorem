@@ -29,6 +29,8 @@ export default function CreateEvent() {
     const form = useForm({ name: '', description: '', activities: '', terms: [emptyTerm(0)] });
     const [saved, setSaved] = useState(false);
     const errors = form.errors as Record<string, string | undefined>;
+    const activityError = errors.activities ?? Object.entries(errors)
+        .find(([key]) => key.startsWith('activities.'))?.[1];
 
     function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -86,6 +88,11 @@ export default function CreateEvent() {
             <p className="mt-2 text-sm text-[#c6bad9]">Podaj nazwę i dodaj przynajmniej jeden termin.</p>
 
             <form className="mt-6" onSubmit={submit}>
+                {saved && (
+                    <div role="status" className="mb-4 rounded-xl border border-[#5b427a] bg-[#302643] px-5 py-4 text-sm text-[#eadbff]">
+                        Wydarzenie zostało utworzone. Możesz zaplanować kolejne spotkanie.
+                    </div>
+                )}
                 <fieldset disabled={form.processing} className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
                     <section aria-labelledby="event-details" className="min-w-0 space-y-4 rounded-2xl border border-[#322b48] bg-[#1c192e] p-5"><h2 id="event-details" className="text-lg font-bold">Szczegóły wydarzenia</h2>
                     <div className="space-y-2">
@@ -109,6 +116,7 @@ export default function CreateEvent() {
                             value={form.data.description}
                             onChange={(event) => form.setData('description', event.target.value)}
                             rows={2} placeholder="Wybierzmy wspólnie termin i pomysł na wieczór."
+                            maxLength={2000}
                             className="border-[#3b3152] focus-visible:ring-[#ddc5ff] w-full rounded-md border bg-[#151225] px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
                             aria-invalid={!!errors.description}
                             aria-describedby={errors.description ? 'event-description-error' : undefined}
@@ -124,13 +132,13 @@ export default function CreateEvent() {
                             className="border-[#3b3152] bg-[#151225] dark:bg-[#151225]"
                             value={form.data.activities}
                             onChange={(event) => form.setData('activities', event.target.value)}
-                            aria-invalid={!!errors.activities}
-                            aria-describedby={errors.activities ? 'event-activities-help event-activities-error' : 'event-activities-help'}
+                            aria-invalid={!!activityError}
+                            aria-describedby={activityError ? 'event-activities-help event-activities-error' : 'event-activities-help'}
                         />
                         <p id="event-activities-help" className="text-xs text-[#c6bad9]">
                             Oddziel aktywności przecinkami.
                         </p>
-                        <InputError id="event-activities-error" message={errors.activities} />
+                        <InputError id="event-activities-error" message={activityError} />
                     </div>
 
                 <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
@@ -138,7 +146,6 @@ export default function CreateEvent() {
                     <Button type="submit" disabled={form.processing} className="bg-[#ddc5ff] font-bold text-[#241738] hover:bg-[#ebdbff]">
                         {form.processing ? 'Zapisywanie…' : 'Utwórz wydarzenie'}
                     </Button>
-                    <span role="status" className="basis-full text-right text-sm">{saved && 'Wydarzenie zostało utworzone.'}</span>
                 </div>
                     </section>
                     <section aria-labelledby="event-terms" className="min-w-0 space-y-3 rounded-2xl border border-[#322b48] bg-[#1c192e] p-5">
