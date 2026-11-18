@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEventRequest;
 use App\Models\Event;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,15 +20,10 @@ class EventController extends Controller
     public function store(StoreEventRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $user = $request->user() ?? User::firstOrCreate(
-            ['email' => 'guest-organizer@events.invalid'],
-            [
-                'name' => 'Organizator tymczasowy',
-                'password' => Str::random(64),
-            ],
-        );
+        $user = $request->user();
 
         $event = DB::transaction(function () use ($data, $user): Event {
+
             $event = $user->organizedEvents()->create([
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
