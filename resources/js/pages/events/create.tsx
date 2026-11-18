@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, Plus, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
@@ -27,14 +27,16 @@ function localToday() {
 export default function CreateEvent() {
     const nextTermId = useRef(1);
     const form = useForm({ name: '', description: '', activities: '', terms: [emptyTerm(0)] });
-    const [saved, setSaved] = useState(false);
+    const [saved, setSaved] = useState<{ name: string; invitationUrl: string | null } | null>(null);
+    const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
     const errors = form.errors as Record<string, string | undefined>;
     const activityError = errors.activities ?? Object.entries(errors)
         .find(([key]) => key.startsWith('activities.'))?.[1];
 
     function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        setSaved(false);
+        setSaved(null);
+        setCopyStatus('idle');
         form.clearErrors();
 
         if (!form.data.name.trim()) {
@@ -72,11 +74,71 @@ export default function CreateEvent() {
         }));
         form.post('/events', {
             preserveScroll: true,
-            onSuccess: () => {
+            onSuccess: (page) => {
+                // Backend contract: flash.createdEvent = { name, invitation_url }.
+                const flash = page.props.flash as {
+                    createdEvent?: { name?: string; invitation_url?: string };
+                } | undefined;
+                const created = flash?.createdEvent;
+                setSaved({
+                    name: created?.name || form.data.name.trim(),
+                    invitationUrl: created?.invitation_url || null,
+                });
                 form.reset();
-                setSaved(true);
             },
         });
+    }
+
+    async function copyInvitation() {
+        if (!saved?.invitationUrl) return;
+        try {
+            await navigator.clipboard.writeText(saved.invitationUrl);
+            setCopyStatus('copied');
+        } catch {
+            setCopyStatus('error');
+        }
+    }
+
+    if (saved) {
+        return (
+            <div className="flex min-w-0 flex-col bg-[#121121] text-[#f6f1ff] [color-scheme:dark]">
+                <Head title="Wydarzenie utworzone" />
+                <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8 sm:py-10">
+                    <p className="mb-2 text-xs font-bold tracking-[0.18em] text-[#d8b9ff] uppercase">Gotowe!</p>
+                    <h1 tabIndex={-1} ref={(element) => element?.focus()} className="text-3xl font-bold tracking-tight outline-none sm:text-4xl">Wydarzenie zostało utworzone</h1>
+                    <p className="mt-2 break-words text-[#c6bad9]">{saved.name}</p>
+
+                    <section aria-labelledby="invitation-heading" className="mt-6 max-w-2xl space-y-5 rounded-2xl border border-[#5b427a] bg-[#1c192e] p-5 sm:p-6">
+                        <div>
+                            <h2 id="invitation-heading" className="text-lg font-bold">Zaproś znajomych</h2>
+                            <p className="mt-2 text-sm text-[#c6bad9]">Udostępnij link osobom, z którymi chcesz zaplanować wspólny wieczór.</p>
+                        </div>
+                        {saved.invitationUrl ? (
+                            <div className="space-y-2">
+                                <Label htmlFor="invitation-url">Link zaproszeniowy</Label>
+                                <div className="flex flex-col gap-2 sm:flex-row">
+                                    <Input id="invitation-url" readOnly value={saved.invitationUrl} onFocus={(event) => event.currentTarget.select()} className="min-w-0 border-[#3b3152] bg-[#151225] dark:bg-[#151225]" />
+                                    <Button type="button" onClick={() => void copyInvitation()} className="shrink-0 bg-[#ddc5ff] font-bold text-[#241738] hover:bg-[#ebdbff]">
+                                        {copyStatus === 'copied' ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                                        {copyStatus === 'copied' ? 'Skopiowano' : 'Kopiuj link'}
+                                    </Button>
+                                </div>
+                                <p role="status" className="text-sm text-[#c6bad9]">
+                                    {copyStatus === 'copied' && 'Link skopiowany. Możesz wysłać go znajomym.'}
+                                    {copyStatus === 'error' && 'Nie udało się skopiować automatycznie. Zaznacz link i skopiuj go ręcznie.'}
+                                </p>
+                            </div>
+                        ) : (
+                            <p role="status" className="rounded-xl border border-[#3b3152] bg-[#151225] p-4 text-sm text-[#c6bad9]">Wydarzenie zapisane. Link zaproszeniowy nie jest jeszcze dostępny.</p>
+                        )}
+                        <div className="flex flex-wrap gap-3 border-t border-[#322b48] pt-5">
+                            <Link href="/events" className="rounded-md border border-[#4a3c62] px-4 py-2 text-sm font-semibold text-[#e8d8ff] hover:bg-[#302643]">Moje wydarzenia</Link>
+                            <Button type="button" onClick={() => { setSaved(null); setCopyStatus('idle'); }} className="bg-[#ddc5ff] font-bold text-[#241738] hover:bg-[#ebdbff]">Utwórz kolejne</Button>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        );
     }
 
     return (
@@ -88,11 +150,6 @@ export default function CreateEvent() {
             <p className="mt-2 text-sm text-[#c6bad9]">Podaj nazwę i dodaj przynajmniej jeden termin.</p>
 
             <form className="mt-6" onSubmit={submit}>
-                {saved && (
-                    <div role="status" className="mb-4 rounded-xl border border-[#5b427a] bg-[#302643] px-5 py-4 text-sm text-[#eadbff]">
-                        Wydarzenie zostało utworzone. Możesz zaplanować kolejne spotkanie.
-                    </div>
-                )}
                 <fieldset disabled={form.processing} className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
                     <section aria-labelledby="event-details" className="min-w-0 space-y-4 rounded-2xl border border-[#322b48] bg-[#1c192e] p-5"><h2 id="event-details" className="text-lg font-bold">Szczegóły wydarzenia</h2>
                     <div className="space-y-2">
