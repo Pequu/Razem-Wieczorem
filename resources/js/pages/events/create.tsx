@@ -24,10 +24,24 @@ function localToday() {
     return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export default function CreateEvent() {
+type CreatedEvent = {
+    name: string;
+    invitation_url: string;
+};
+
+export default function CreateEvent({
+    createdEvent = null,
+}: {
+    createdEvent?: CreatedEvent | null;
+}) {
     const nextTermId = useRef(1);
     const form = useForm({ name: '', description: '', activities: '', terms: [emptyTerm(0)] });
-    const [saved, setSaved] = useState<{ name: string; invitationUrl: string | null } | null>(null);
+    const saved = createdEvent
+        ? {
+            name: createdEvent.name,
+            invitationUrl: createdEvent.invitation_url,
+        }
+        : null;
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
     const errors = form.errors as Record<string, string | undefined>;
     const activityError = errors.activities ?? Object.entries(errors)
@@ -35,7 +49,6 @@ export default function CreateEvent() {
 
     function submit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        setSaved(null);
         setCopyStatus('idle');
         form.clearErrors();
 
@@ -74,16 +87,7 @@ export default function CreateEvent() {
         }));
         form.post('/events', {
             preserveScroll: true,
-            onSuccess: (page) => {
-                // Backend contract: flash.createdEvent = { name, invitation_url }.
-                const flash = page.props.flash as {
-                    createdEvent?: { name?: string; invitation_url?: string };
-                } | undefined;
-                const created = flash?.createdEvent;
-                setSaved({
-                    name: created?.name || form.data.name.trim(),
-                    invitationUrl: created?.invitation_url || null,
-                });
+            onSuccess: () => {
                 form.reset();
             },
         });
@@ -133,7 +137,7 @@ export default function CreateEvent() {
                         )}
                         <div className="flex flex-wrap gap-3 border-t border-[#322b48] pt-5">
                             <Link href="/events" className="rounded-md border border-[#4a3c62] px-4 py-2 text-sm font-semibold text-[#e8d8ff] hover:bg-[#302643]">Moje wydarzenia</Link>
-                            <Button type="button" onClick={() => { setSaved(null); setCopyStatus('idle'); }} className="bg-[#ddc5ff] font-bold text-[#241738] hover:bg-[#ebdbff]">Utwórz kolejne</Button>
+                            <Link href="/events/create" className="rounded-md bg-[#ddc5ff] px-4 py-2 text-sm font-bold text-[#241738] hover:bg-[#ebdbff]">Utwórz kolejne</Link>
                         </div>
                     </section>
                 </main>

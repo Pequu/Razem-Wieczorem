@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { CalendarDays, ChevronDown, Plus, Users } from 'lucide-react';
+import { CalendarDays, ChevronDown, Plus, Users, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 
 type EventItem = {
@@ -12,6 +12,7 @@ type EventItem = {
     terms: { id: number; date: string; starts_at: string; ends_at: string }[];
     activities: string[];
     plan: { date: string | null; starts_at: string | null; place: string | null; activity: string | null } | null;
+    invitation_url?: string | null;
 };
 
 function formatDate(date: string) {
@@ -27,6 +28,20 @@ function countLabel(count: number, one: string, few: string, many: string) {
 export default function EventsIndex({ events: suppliedEvents }: { events?: EventItem[] }) {
     const events = suppliedEvents ?? [];
     const [tab, setTab] = useState<'organizer' | 'member'>('organizer');
+
+    const [copyResult, setCopyResult] = useState<{eventId: number; status: 'copied' | 'error';} | null>(null);
+
+    async function copyInvitation(eventId: number, url: string) {
+        if (!url) return;
+
+        try {
+            await navigator.clipboard.writeText(url);
+            setCopyResult({ eventId, status: 'copied' });
+        } catch {
+            setCopyResult({ eventId, status: 'error' });
+        }
+    }
+
     const visibleEvents = events.filter((event) => event.role === tab);
 
     return (
@@ -67,6 +82,31 @@ export default function EventsIndex({ events: suppliedEvents }: { events?: Event
                                     {event.plan ? 'Plan zapisany' : event.voting_status === 'open' ? 'Głosowanie otwarte' : event.voting_status === 'closed' ? 'Głosowanie zamknięte' : 'W ustalaniu'}
                                 </span>
                                 <h2 className="mt-4 break-words text-xl font-semibold sm:text-2xl">{event.name}</h2>
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                    <Link href={`/events/${event.id}`} className="rounded-md border border-[#4a3c62] px-4 py-2 text-sm font-semibold text-[#e8d8ff] hover:bg-[#302643]">Otwórz wydarzenie</Link>
+                                </div>
+
+                                {event.role === 'organizer' && event.invitation_url && (
+                                    <div className="mt-4 rounded-xl border border-[#4a3c62] bg-[#151225] p-4">
+                                        <label htmlFor={`invitation-${event.id}`} className="text-sm font-semibold text-[#ddc5ff]">
+                                            Link zaproszeniowy
+                                        </label>
+
+                                        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                                            <input id={`invitation-${event.id}`} type="text" readOnly value={event.invitation_url} onFocus={(e) => e.currentTarget.select()} className="min-w-0 flex-1 rounded-md border border-[#4a3c62] bg-[#1c192e] px-3 py-2 text-sm text-[#e8d8ff]"/>
+                                            <button type="button" onClick={() => void copyInvitation(event.id, event.invitation_url ?? '')} className="inline-flex items-center justify-center gap-2 rounded-md bg-[#ddc5ff] px-4 py-2 text-sm font-bold text-[#241738] hover:bg-[#ebdbff]">
+                                                {copyResult?.eventId === event.id && copyResult.status === 'copied' ? <Check size={16} /> : <Copy size={16} />}
+                                                {copyResult?.eventId === event.id && copyResult.status === 'copied' ? 'Skopiowano' : 'Kopiuj'}
+                                            </button>
+                                        </div>
+
+                                        {copyResult?.eventId === event.id && (
+                                            <p role="status" className="mt-2 text-xs text-[#c6bad9]">
+                                                {copyResult.status === 'copied' ? 'Link skopiowany do schowka.' : 'Nie udało się skopiować. Zaznacz link i skopiuj ręcznie.'}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                                 {event.plan ? (
                                     <div className="mt-3 space-y-1 text-sm text-[#c6bad9]">
                                         <p>{event.plan.date ? formatDate(event.plan.date) : 'Termin jeszcze nieustalony'}{event.plan.starts_at && ` · ${event.plan.starts_at}`}</p>
