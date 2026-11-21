@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, CalendarDays, Check, Clock3, Copy, Link2, MapPin, Sparkles, Users } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import EventInvite from './invite';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,9 +53,8 @@ function EmptyState({ children }: { children: ReactNode }) {
     return <p className="rounded-xl border border-dashed border-[#4a3c62] p-4 text-sm leading-relaxed text-[#c6bad9]">{children}</p>;
 }
 
-function EventDetails({event, joinUrl}: {
+function EventDetails({event}: {
     event: EventDetailsData | null;
-    joinUrl?: string | null;
 }) {
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle');
     const invitationInput = useRef<HTMLInputElement>(null);
@@ -107,27 +107,6 @@ function EventDetails({event, joinUrl}: {
                                 ? <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-[#d1c4e3]">{event.description}</p>
                                 : <EmptyState>{event ? 'Organizator nie dodał jeszcze opisu wydarzenia.' : 'Informacje o wydarzeniu nie są jeszcze dostępne.'}</EmptyState>}
                         </Section>
-
-                        {joinUrl && (
-                            <section className="mt-6 rounded-2xl border border-[#5b427a] bg-[#251e39] p-5">
-                                <h2 className="text-lg font-bold">
-                                    Otrzymałeś zaproszenie!
-                                </h2>
-
-                                <p className="mt-2 text-sm text-[#c6bad9]">
-                                    Dołącz do wydarzenia, aby pojawiło się w Twojej zakładce „Uczestniczę”.
-                                </p>
-
-                                <Link
-                                    href={joinUrl}
-                                    method="post"
-                                    as="button"
-                                    className="mt-4 rounded-md bg-[#ddc5ff] px-4 py-2 text-sm font-bold text-[#241738] hover:bg-[#ebdbff]"
-                                >
-                                    Dołącz do wydarzenia
-                                </Link>
-                            </section>
-                        )}
 
                         <Section id="event-terms" title="Proponowane terminy" icon={<CalendarDays size={20} aria-hidden="true" />}>
                             {terms.length ? (
@@ -211,11 +190,14 @@ export default function EventShow({event = null, join_url = null}: {
     event?: EventDetailsData | null;
     join_url?: string | null;
 }) {
+    if (join_url && event && !event.role) {
+        return <EventInvite event={event} join_url={join_url} />;
+    }
+
     return (
         <EventDetails
             key={`${event?.id ?? 'empty'}:${event?.role ?? ''}`}
             event={event}
-            joinUrl={join_url}
         />
     );
 }
