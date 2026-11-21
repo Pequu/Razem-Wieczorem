@@ -1,10 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, CalendarDays, Check, Clock3, Copy, Link2, MapPin, Sparkles, Users } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Check, Copy, Link2, MapPin, Sparkles, Users } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import EventInvite from './invite';
 import EventDescriptionEditor from '@/components/events/event-description-editor';
 import EventTermsEditor from '@/components/events/event-terms-editor';
+import EventTermVoting from '@/components/events/event-term-voting';
+import type { VotingTerm } from '@/components/events/event-term-voting';
+import EventActivityForm from '@/components/events/event-activity-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +20,7 @@ export type EventDetailsData = {
     role?: 'organizer' | 'member' | null;
     voting_status?: string;
     members_count?: number;
-    terms?: { id: number; date: string; starts_at: string; ends_at: string }[];
+    terms?: VotingTerm[];
     activities?: string[];
     members?: { id: number; name: string; role: 'organizer' | 'member' }[];
     invitation_url?: string | null;
@@ -55,10 +58,12 @@ function EmptyState({ children }: { children: ReactNode }) {
     return <p className="rounded-xl border border-dashed border-[#4a3c62] p-4 text-sm leading-relaxed text-[#c6bad9]">{children}</p>;
 }
 
-function EventDetails({event, updateDescriptionUrl, addTermsUrl}: {
+function EventDetails({event, updateDescriptionUrl, addTermsUrl, availabilityUrl, addActivityUrl}: {
     event: EventDetailsData | null;
     updateDescriptionUrl?: string | null;
     addTermsUrl?: string | null;
+    availabilityUrl?: string | null;
+    addActivityUrl?: string | null;
 }) {
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle');
     const invitationInput = useRef<HTMLInputElement>(null);
@@ -67,6 +72,8 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl}: {
     const members = event?.members;
     const plan = event?.plan;
     const isOrganizer = event?.role === 'organizer';
+    const canParticipate = isOrganizer || event?.role === 'member';
+    const votingOpen = event?.voting_status === 'open';
     const invitationUrl = isOrganizer ? event?.invitation_url?.trim() : undefined;
     const memberCount = event?.members_count ?? members?.length;
     const status = event
@@ -115,19 +122,7 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl}: {
                         </Section>
 
                         <Section id="event-terms" title="Proponowane terminy" icon={<CalendarDays size={20} aria-hidden="true" />}>
-                            {terms.length ? (
-                                <ul className="space-y-3">
-                                    {terms.map((term, index) => (
-                                        <li key={term.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#3b3152] bg-[#151225] p-4">
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-semibold">{formatDate(term.date)}</p>
-                                                <p className="mt-2 flex items-center gap-2 text-sm text-[#c6bad9]"><Clock3 size={14} aria-hidden="true" />{term.starts_at.slice(0, 5)}–{term.ends_at.slice(0, 5)}</p>
-                                            </div>
-                                            <span className="rounded-full bg-[#322743] px-2.5 py-1 text-xs font-semibold text-[#ddc5ff]">Termin {index + 1}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : <EmptyState>Nie ma jeszcze propozycji terminów.</EmptyState>}
+                            <EventTermVoting terms={terms} canParticipate={canParticipate} isOpen={votingOpen} saveUrl={availabilityUrl} />
                             {isOrganizer && <EventTermsEditor existingTerms={terms} storeUrl={addTermsUrl} />}
                         </Section>
 
@@ -135,6 +130,7 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl}: {
                             {activities.length ? (
                                 <ul className="flex flex-wrap gap-2">{activities.map((activity, index) => <li key={`${index}-${activity}`} className="max-w-full rounded-lg border border-[#4a3c62] bg-[#302643] px-3 py-2 text-sm break-words text-[#e8d8ff]">{activity}</li>)}</ul>
                             ) : <EmptyState>Nie ma jeszcze propozycji aktywności.</EmptyState>}
+                            {canParticipate && <EventActivityForm existingActivities={activities} storeUrl={addActivityUrl} isOpen={votingOpen} />}
                         </Section>
                     </div>
 
@@ -193,11 +189,13 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl}: {
     );
 }
 
-export default function EventShow({event = null, join_url = null, update_description_url = null, add_terms_url = null}: {
+export default function EventShow({event = null, join_url = null, update_description_url = null, add_terms_url = null, availability_url = null, add_activity_url = null}: {
     event?: EventDetailsData | null;
     join_url?: string | null;
     update_description_url?: string | null;
     add_terms_url?: string | null;
+    availability_url?: string | null;
+    add_activity_url?: string | null;
 }) {
     if (join_url && event && !event.role) {
         return <EventInvite event={event} join_url={join_url} />;
@@ -209,6 +207,8 @@ export default function EventShow({event = null, join_url = null, update_descrip
             event={event}
             updateDescriptionUrl={update_description_url}
             addTermsUrl={add_terms_url}
+            availabilityUrl={availability_url}
+            addActivityUrl={add_activity_url}
         />
     );
 }
