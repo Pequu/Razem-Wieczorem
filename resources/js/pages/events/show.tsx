@@ -3,6 +3,8 @@ import { ArrowLeft, CalendarDays, Check, Clock3, Copy, Link2, MapPin, Sparkles, 
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import EventInvite from './invite';
+import EventDescriptionEditor from '@/components/events/event-description-editor';
+import EventTermsEditor from '@/components/events/event-terms-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,8 +55,10 @@ function EmptyState({ children }: { children: ReactNode }) {
     return <p className="rounded-xl border border-dashed border-[#4a3c62] p-4 text-sm leading-relaxed text-[#c6bad9]">{children}</p>;
 }
 
-function EventDetails({event}: {
+function EventDetails({event, updateDescriptionUrl, addTermsUrl}: {
     event: EventDetailsData | null;
+    updateDescriptionUrl?: string | null;
+    addTermsUrl?: string | null;
 }) {
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle');
     const invitationInput = useRef<HTMLInputElement>(null);
@@ -103,7 +107,9 @@ function EventDetails({event}: {
                 <div className="mt-7 grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
                     <div className="min-w-0 space-y-4">
                         <Section id="event-description" title="O wydarzeniu" icon={<Sparkles size={20} aria-hidden="true" />}>
-                            {event?.description?.trim()
+                            {isOrganizer ? (
+                                <EventDescriptionEditor description={event?.description} updateUrl={updateDescriptionUrl} />
+                            ) : event?.description?.trim()
                                 ? <p className="text-sm leading-relaxed break-words whitespace-pre-wrap text-[#d1c4e3]">{event.description}</p>
                                 : <EmptyState>{event ? 'Organizator nie dodał jeszcze opisu wydarzenia.' : 'Informacje o wydarzeniu nie są jeszcze dostępne.'}</EmptyState>}
                         </Section>
@@ -122,6 +128,7 @@ function EventDetails({event}: {
                                     ))}
                                 </ul>
                             ) : <EmptyState>Nie ma jeszcze propozycji terminów.</EmptyState>}
+                            {isOrganizer && <EventTermsEditor existingTerms={terms} storeUrl={addTermsUrl} />}
                         </Section>
 
                         <Section id="event-activities" title="Pomysły na wieczór" icon={<Sparkles size={20} aria-hidden="true" />}>
@@ -186,9 +193,11 @@ function EventDetails({event}: {
     );
 }
 
-export default function EventShow({event = null, join_url = null}: {
+export default function EventShow({event = null, join_url = null, update_description_url = null, add_terms_url = null}: {
     event?: EventDetailsData | null;
     join_url?: string | null;
+    update_description_url?: string | null;
+    add_terms_url?: string | null;
 }) {
     if (join_url && event && !event.role) {
         return <EventInvite event={event} join_url={join_url} />;
@@ -198,6 +207,8 @@ export default function EventShow({event = null, join_url = null}: {
         <EventDetails
             key={`${event?.id ?? 'empty'}:${event?.role ?? ''}`}
             event={event}
+            updateDescriptionUrl={update_description_url}
+            addTermsUrl={add_terms_url}
         />
     );
 }
