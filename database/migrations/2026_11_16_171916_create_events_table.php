@@ -18,7 +18,8 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('voting_status', 20)->default('open');
-            $table->string('invitation_code', 64)->unique();
+            $table->string('invitation_code', 16)->unique();
+            $table->string('short_invitation', 6)->unique();
 
             $table->timestamps();
         });
