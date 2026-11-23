@@ -33,6 +33,26 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/events/{event}', [EventController::class, 'show'])
         ->whereNumber('event')
         ->name('events.show');
+
+    Route::patch(
+        '/events/{event}/description',
+        [EventController::class, 'updateDescription']
+    )->whereNumber('event')->name('events.description.update');
+
+    Route::post(
+        '/events/{event}/terms',
+        [EventController::class, 'addTerms']
+    )->whereNumber('event')->name('events.terms.store');
+
+    Route::patch(
+        '/events/{event}/availabilities',
+        [EventController::class, 'updateAvailabilities']
+    )->whereNumber('event')->name('events.availabilities.update');
+
+    Route::post(
+        '/events/{event}/activities',
+        [EventController::class, 'addActivity']
+    )->whereNumber('event')->name('events.activities.store');
 });
 
 require __DIR__.'/settings.php';

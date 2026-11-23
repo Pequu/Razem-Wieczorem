@@ -15,6 +15,7 @@ class Event extends Model
         'description',
         'voting_status',
         'invitation_code',
+        'short_invitation',
     ];
 
     public function organizer(): BelongsTo
