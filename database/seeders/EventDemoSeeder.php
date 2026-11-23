@@ -39,6 +39,7 @@ class EventDemoSeeder extends Seeder
                     'name' => 'Wspólny wyjazd integracyjny',
                     'description' => 'Przykładowe wydarzenie demonstracyjne.',
                     'voting_status' => 'open',
+                    'short_invitation',
                 ]
             );
 

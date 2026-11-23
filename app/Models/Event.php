@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Event extends Model
 {
@@ -14,6 +15,7 @@ class Event extends Model
         'description',
         'voting_status',
         'invitation_code',
+        'short_invitation',
     ];
 
     public function organizer(): BelongsTo
@@ -39,5 +41,10 @@ class Event extends Model
     public function planVersions(): HasMany
     {
         return $this->hasMany(PlanVersion::class);
+    }
+
+    public function latestPlanVersion(): HasOne
+    {
+        return $this->hasOne(PlanVersion::class) -> latestOfMany('version_number');
     }
 }
