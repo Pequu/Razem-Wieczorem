@@ -27,7 +27,7 @@ Poniższa instrukcja opisuje instalację lokalną na **Windows w PowerShell**. N
 | PHP | **8.4.1 lub nowsze zgodne z lockiem**; proponowana aktualna poprawka PHP 8.4 | Instalacja w Herd |
 | Composer | Wersja 2; zależności PHP | Dostępny w Herd; osobno: [Composer](https://getcomposer.org/download/) |
 | Node.js i npm | Proponowany **Node 24.x od 24.11.0**, npm razem z Node | [Node.js](https://nodejs.org/en/download) |
-| MariaDB | Serwer bazy danych; wybierz wspieraną stabilną wersję | [MariaDB Server](https://mariadb.org/download/) |
+| MariaDB | Serwer bazy danych: 13.0.2 | [MariaDB Server](https://mariadb.org/download/) |
 | Edytor kodu | Opcjonalnie Visual Studio Code | [VS Code](https://code.visualstudio.com/) |
 
 `composer.json` deklaruje PHP `^8.3`, ale wersje zapisane obecnie w `composer.lock` wymagają co najmniej **8.4.1**. PHP 8.2 z XAMPP nie wystarczy. Dokładną zgodność sprawdza Composer.
