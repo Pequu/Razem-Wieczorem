@@ -12,7 +12,9 @@ Projekt na przedmiot **Projekt Systemu Aplikacji Multimedialnej**.
 - Frontend: React 19, TypeScript, Inertia 3, Tailwind CSS 4.
 - Narzędzia: Composer, npm, Vite+ i Laravel Wayfinder.
 
-Projekt jest w trakcie rozwoju. Część interfejsu czeka na integrację z backendem. Uruchomienie bazy i migracji nie oznacza automatycznie, że każdy widok wyświetla już dane z bazy. Dotyczy to m.in. listy „Moje wydarzenia” i obsługi zaproszeń. Aktualną implementację określają pliki w pobranej gałęzi repozytorium.
+Projekt jest w trakcie rozwoju. W aktualnym kodzie lista wydarzeń, szczegóły, zaproszenia, edycja opisu, dodawanie terminów, odpowiedzi na terminy i proponowanie aktywności mają już trasy oraz obsługę w backendzie. Frontend otrzymuje dane i adresy operacji przez Inertia.
+
+Opis poniżej odpowiada sprawdzonym plikom projektu. Nie jest potwierdzeniem przejścia pełnych testów w przeglądarce. Po pobraniu zmian wykonaj scenariusz z sekcji 14. Samo skopiowanie plików React bez odpowiadających im zmian backendu nie uruchomi zapisu.
 
 ## 1. Wymagane programy
 
@@ -202,7 +204,7 @@ php artisan db:seed
 
 Aktualny `UserSeeder` tworzy konta `admin@example.com`, `organizer@example.com` oraz `user@example.com` z hasłem `123`. To wyłącznie dane lokalne do demonstracji. Seeder może także nadpisać dane istniejących kont o tych adresach; nie uruchamiaj go w bazie z rzeczywistymi kontami.
 
-`EventDemoSeeder` dodaje przykładowe wydarzenie. Jego pojawienie się w bazie nie podłącza automatycznie listy wydarzeń w React.
+`EventDemoSeeder` dodaje przykładowe wydarzenie. Na liście zobaczy je użytkownik przypisany do niego jako organizator lub uczestnik; nie jest to lista wszystkich wydarzeń w bazie.
 
 ## 7. Uruchomienie strony
 
@@ -253,11 +255,16 @@ Po pierwszej konfiguracji wystarczy uruchomić MariaDB, Herd i `npm run dev` (al
 | Adres | Widok |
 | --- | --- |
 | `/` | Strona główna |
-| `/events` | Moje wydarzenia; rzeczywista lista wymaga integracji z backendem |
-| `/events/create` | Tworzenie wydarzenia |
+| `/events` | Moje wydarzenia z bazy, zakładki „Organizuję” i „Uczestniczę”; wymagane logowanie |
+| `/events/create` | Tworzenie wydarzenia; wymagane logowanie |
+| `/events/{id}` | Szczegóły wydarzenia dla organizatora i uczestników |
+| `/events/{id}/created` | Potwierdzenie utworzenia i link zaproszeniowy dla organizatora |
+| `/events/invite/{code}` | Zaproszenie i dołączanie do wydarzenia; wymagane logowanie |
 | `/login` | Logowanie |
 | `/register` | Rejestracja |
 | `/forgot-password` | Prośba o reset hasła |
+
+W adresach zastąp `{id}` rzeczywistym identyfikatorem, a `{code}` kodem z linku zaproszeniowego. Nie wpisuj nawiasów klamrowych. Użytkownik bez członkostwa nie otworzy zwykłych szczegółów; powinien skorzystać z zaproszenia.
 
 Sprawdź formularz tworzenia oraz trasy i migracje:
 
@@ -410,6 +417,102 @@ HTTP 405 dla `GET /events` oznacza brak właściwej trasy GET, a nie problem z b
 | `tests` | Testy |
 
 Zmiany wyglądu i zachowania interfejsu wykonujemy w plikach frontendowych. Przekazywanie danych do Inertia, zapis do bazy i autoryzację uzgadniamy z osobą odpowiedzialną za backend.
+
+## 13. Widoki i funkcje aplikacji
+
+### Role i dostęp
+
+Do stron wydarzeń wymagane jest logowanie. Organizator widzi swoje wydarzenia w zakładce „Organizuję”, a osoba dołączająca do wydarzenia — w „Uczestniczę”. Backend sprawdza członkostwo i uprawnienia; samo ukrycie przycisku w React nie nadaje ani nie odbiera uprawnień.
+
+| Funkcja | Organizator | Uczestnik |
+| --- | --- | --- |
+| Szczegóły wydarzenia i lista uczestników | Tak | Tak |
+| Zmiana opisu | Tak | Nie |
+| Dopisywanie nowych terminów | Tak | Nie |
+| Kopiowanie linku zaproszeniowego | Tak | Nie |
+| Wskazanie dostępności dla terminów | Przy otwartym głosowaniu | Przy otwartym głosowaniu |
+| Proponowanie aktywności | Przy otwartym głosowaniu | Przy otwartym głosowaniu |
+
+Organizator jest także uczestnikiem spotkania i jest uwzględniany w liczbie członków. Nowo dopisane terminy nie zastępują wcześniejszych. Odpowiedź na termin nie jest głosem na aktywność — są to odrębne funkcje.
+
+### Tworzenie i zaproszenia
+
+1. Zaloguj się i wybierz „Utwórz nowe”.
+2. Wpisz nazwę oraz co najmniej jeden termin. Opis i początkowe aktywności są opcjonalne; aktywności w formularzu tworzenia oddzielaj przecinkami.
+3. Po zapisaniu zobaczysz potwierdzenie i link zaproszeniowy. Link można też skopiować w szczegółach jako organizator.
+4. Wyślij link innej osobie. Na jej koncie link otworzy osobny widok zaproszenia z informacjami o spotkaniu i przyciskiem dołączenia.
+5. Po dołączeniu osoba zostaje przekierowana do szczegółów. Wydarzenie pojawia się w jej zakładce „Uczestniczę”.
+
+Jeżeli odbiorca nie jest zalogowany, najpierw musi się zalogować lub zarejestrować. Jeśli po uwierzytelnieniu nie wróci do zaproszenia, powinien ponownie otworzyć ten sam link. Organizator oraz osoba już należąca do wydarzenia zobaczą szczegóły zamiast karty dołączania.
+
+W obecnej integracji backend renderuje `events/show` także przy otwieraniu zaproszenia. Komponent React wybiera widok `invite.tsx`, gdy otrzyma `join_url` i użytkownik nie ma jeszcze roli w wydarzeniu. Nie trzeba dodawać osobnej trasy PHP tylko po to, aby wyświetlić ten układ.
+
+### Opis i terminy
+
+Organizator otwiera „Edytuj opis”, zmienia treść i wybiera „Zapisz opis” albo „Anuluj”. Opis ma limit 2000 znaków; można również go usunąć.
+
+„Dodaj terminy” pozwala przygotować kilka nowych propozycji. Data nie może być z przeszłości, a godzina zakończenia musi być późniejsza niż rozpoczęcia. Frontend sprawdza również identyczne propozycje. Backend dodatkowo waliduje dane; aktualny limit jednego żądania wynosi 20 nowych terminów. Usuwanie wierszy w formularzu dotyczy niezapisanych propozycji, nie istniejących terminów.
+
+### Dostępność i aktywności
+
+Przy terminie można wskazać „Pasuje mi”, „Nie pasuje” lub „Może”. Można odpowiedzieć na kilka terminów. Wybór zmienia formularz w przeglądarce; dopiero „Zapisz odpowiedzi” wysyła zmiany. „Anuluj zmiany” odtwarza odpowiedzi otrzymane od backendu. Zapisane odpowiedzi są przekazywane jako `my_response` przy terminach.
+
+W sekcji aktywności uczestnik może wpisać jeden pomysł i wybrać „Dodaj pomysł”. Nazwa ma limit 255 znaków. Frontend wykrywa powtórzenia na otrzymanej liście, ignorując wielkość liter i nadmiarowe odstępy. Backend wykonuje własną walidację i zapis.
+
+Przy zamkniętym głosowaniu frontend blokuje odpowiedzi i dodawanie aktywności. Przy wysyłaniu formularze pokazują stan przetwarzania i blokują ponowne wysłanie. Jeżeli odpowiedni adres operacji nie został przekazany, przycisk zapisu jest nieaktywny; interfejs nie potwierdza wtedy zapisu do bazy.
+
+### Podział plików frontendu
+
+Ścieżki w tabeli są względne wobec `resources/js/`.
+
+| Plik | Odpowiedzialność |
+| --- | --- |
+| `app.tsx` | Uruchomienie Inertia, wspólny nagłówek i stopka |
+| `pages/welcome.tsx` | Strona główna |
+| `pages/auth/` | Widoki uwierzytelniania |
+| `pages/events/create.tsx` | Formularz tworzenia i potwierdzenie z zaproszeniem |
+| `pages/events/index.tsx` | Lista wydarzeń i filtrowanie według roli |
+| `pages/events/show.tsx` | Szczegóły wydarzenia i łączenie komponentów |
+| `pages/events/invite.tsx` | Oddzielny widok zaproszenia |
+| `components/events/event-join-card.tsx` | Dołączanie przez adres przekazany przez backend |
+| `components/events/event-description-editor.tsx` | Edycja opisu organizatora |
+| `components/events/event-terms-editor.tsx` | Dopisywanie nowych terminów |
+| `components/events/event-term-voting.tsx` | Wybór i zapis dostępności |
+| `components/events/event-activity-form.tsx` | Proponowanie aktywności |
+
+### Dane przekazywane przez Inertia
+
+`events/index` otrzymuje tablicę `events`. `events/show` otrzymuje obiekt `event`, którego format opisuje typ `EventDetailsData` w `show.tsx`. Obejmuje m.in. nazwę, opis, rolę, status głosowania, terminy, aktywności, uczestników, plan oraz link zaproszeniowy organizatora. `events/create` po utworzeniu otrzymuje `createdEvent` z nazwą i adresem zaproszenia.
+
+| Pole adresu w propsach `events/show` | Metoda i obecna trasa | Dane formularza |
+| --- | --- | --- |
+| `join_url` | `POST /events/invite/{code}/join` | Pusty formularz |
+| `update_description_url` | `PATCH /events/{id}/description` | `description`: tekst lub `null` |
+| `add_terms_url` | `POST /events/{id}/terms` | `terms`: tablica dat i godzin, bez lokalnych identyfikatorów wierszy |
+| `availability_url` | `PATCH /events/{id}/availabilities` | `availabilities`: tablica obiektów `term_id`, `response` |
+| `add_activity_url` | `POST /events/{id}/activities` | `name`: nazwa aktywności |
+
+Odpowiedzi dostępności mają wartości `available`, `unavailable`, `maybe`. Brak odpowiedzi jest przekazywany jako `null` lub pominięte `my_response`; nie oznacza automatycznie „Nie pasuje”.
+
+Frontend używa adresów od backendu zamiast zgadywać trasy. Po zmianie kontraktu aktualizujemy obie strony integracji w uzgodnieniu z zespołem. Błędy walidacji trafiają do formularzy przez Inertia.
+
+## 14. Ręczne sprawdzenie po aktualizacji
+
+Ten scenariusz pozwala sprawdzić współpracę frontendu i backendu. Nie jest raportem z automatycznie wykonanych testów.
+
+1. Uruchom projekt zgodnie z instrukcją. Przygotuj dwa różne konta: A i B. Drugie konto otwórz w innej przeglądarce lub oknie prywatnym, aby nie zmieniać sesji konta A.
+2. Jako A utwórz wydarzenie z opisem, aktywnościami i przyszłymi terminami. Sprawdź potwierdzenie i link zaproszeniowy.
+3. Otwórz „Moje wydarzenia”. Sprawdź kartę w zakładce „Organizuję”, a następnie jej szczegóły.
+4. Zmień opis i dodaj termin. Odśwież stronę, aby sprawdzić, czy zmiany przetrwały odświeżenie i czy wcześniejsze terminy pozostały.
+5. Na koncie B otwórz link zaproszeniowy. Sprawdź osobny widok dołączania, a następnie dołącz do wydarzenia.
+6. Na koncie B sprawdź zakładkę „Uczestniczę”. W szczegółach nie powinno być edycji opisu ani dodawania terminów organizatora.
+7. Wskaż różne odpowiedzi dla terminów i zapisz je. Odśwież stronę, sprawdź odtworzone zaznaczenia, a następnie przetestuj zmianę i anulowanie odpowiedzi.
+8. Dodaj własną aktywność. Odśwież szczegóły na obu kontach i sprawdź, czy propozycja jest widoczna. Sprawdź również pustą nazwę i powtórzenie istniejącego pomysłu.
+9. Sprawdź walidację przeszłej daty, godziny końcowej wcześniejszej od początkowej oraz identycznego terminu. Przy błędzie wpisane dane powinny pozostać w formularzu.
+10. Otwórz zaproszenie ponownie po dołączeniu. Powinny pojawić się szczegóły bez ponownego tworzenia członkostwa.
+11. Sprawdź układ na wąskim ekranie i obsługę klawiaturą: formularze, przyciski, zaznaczenia oraz komunikaty błędów.
+
+Jeżeli zapis jest nieaktywny, sprawdź obecność adresów w propsach, aktualność kontrolera oraz wynik `php artisan route:list --path=events`. Jeśli zapis zwraca błąd, sprawdź odpowiedź w panelu Network przeglądarki i logi Laravel. Nie zastępuj prawdziwego zapisu dopisywaniem danych wyłącznie do stanu Reacta.
 
 ## Dokumentacja narzędzi
 
