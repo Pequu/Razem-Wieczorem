@@ -27,7 +27,48 @@ function localToday() {
 type CreatedEvent = {
     name: string;
     invitation_url: string;
+    short_invitation?: string | null;
 };
+
+function ShortInvitationCode({ code }: { code?: string | null }) {
+    const [status, setStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle');
+    const input = useRef<HTMLInputElement>(null);
+
+    async function copyCode() {
+        if (!code || status === 'copying') return;
+        setStatus('copying');
+        try {
+            await navigator.clipboard.writeText(code);
+            setStatus('copied');
+        } catch {
+            setStatus('error');
+            input.current?.focus();
+            input.current?.select();
+        }
+    }
+
+    return (
+        <div className="space-y-3 rounded-xl border border-[#5b427a] bg-[#251e39] p-4 sm:p-5">
+            <Label htmlFor="created-invitation-code">Krótki kod zaproszenia</Label>
+            {code ? (
+                <>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        <Input ref={input} id="created-invitation-code" readOnly value={code} onFocus={(event) => event.currentTarget.select()} aria-describedby="created-code-help created-code-status" className="h-12 min-w-0 flex-1 border-[#5b427a] bg-[#151225] font-mono text-xl tracking-[0.25em] text-[#f6f1ff] dark:bg-[#151225]" />
+                        <Button type="button" disabled={status === 'copying'} onClick={() => void copyCode()} className="h-12 shrink-0 bg-[#ddc5ff] font-bold text-[#241738] hover:bg-[#ebdbff]">
+                            {status === 'copied' ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                            {status === 'copied' ? 'Skopiowano kod' : status === 'copying' ? 'Kopiowanie…' : 'Kopiuj kod'}
+                        </Button>
+                    </div>
+                    <p id="created-code-help" className="text-sm leading-relaxed text-[#c6bad9]">Przekaż znajomym ten kod. Mogą wpisać go w sekcji „Dołącz kodem” na stronie „Moje wydarzenia”.</p>
+                    <p id="created-code-status" role="status" className="text-sm text-[#e8d8ff]">
+                        {status === 'copied' && 'Kod skopiowany do schowka.'}
+                        {status === 'error' && 'Nie udało się skopiować automatycznie. Zaznacz kod i skopiuj go ręcznie.'}
+                    </p>
+                </>
+            ) : <p className="text-sm leading-relaxed text-[#c6bad9]">Krótki kod nie jest jeszcze dostępny. Możesz udostępnić link zaproszeniowy poniżej.</p>}
+        </div>
+    );
+}
 
 export default function CreateEvent({
     createdEvent = null,
@@ -40,6 +81,7 @@ export default function CreateEvent({
         ? {
             name: createdEvent.name,
             invitationUrl: createdEvent.invitation_url,
+            shortInvitation: createdEvent.short_invitation,
         }
         : null;
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
@@ -117,6 +159,7 @@ export default function CreateEvent({
                             <h2 id="invitation-heading" className="text-lg font-bold">Zaproś znajomych</h2>
                             <p className="mt-2 text-sm text-[#c6bad9]">Udostępnij link osobom, z którymi chcesz zaplanować wspólny wieczór.</p>
                         </div>
+                        <ShortInvitationCode key={saved.shortInvitation ?? 'unavailable'} code={saved.shortInvitation} />
                         {saved.invitationUrl ? (
                             <div className="space-y-2">
                                 <Label htmlFor="invitation-url">Link zaproszeniowy</Label>
@@ -291,7 +334,7 @@ export default function CreateEvent({
     );
 }
 
-CreateEvent.layout = [];
+CreateEvent.layout = [] as [];
 
 
 

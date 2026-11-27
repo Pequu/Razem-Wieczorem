@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, CalendarDays, Check, Copy, Link2, MapPin, Sparkles, Users } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import EventShortCode from '@/components/events/event-short-code';
 import EventInvite from './invite';
 import EventDescriptionEditor from '@/components/events/event-description-editor';
 import EventTermsEditor from '@/components/events/event-terms-editor';
@@ -24,6 +25,7 @@ export type EventDetailsData = {
     activities?: string[];
     members?: { id: number; name: string; role: 'organizer' | 'member' }[];
     invitation_url?: string | null;
+    short_invitation?: string | null;
     plan?: {
         date: string | null;
         starts_at: string | null;
@@ -165,6 +167,7 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl, availabilityUrl
                             {isOrganizer ? (
                                 <div className="space-y-3">
                                     <p className="text-sm leading-relaxed text-[#c6bad9]">Wyślij znajomym link zaproszenia do tego wydarzenia.</p>
+                                    <EventShortCode key={event?.short_invitation ?? 'empty'} id="details-short-invitation" code={event?.short_invitation} />
                                     {invitationUrl ? (
                                         <>
                                             <Label htmlFor="event-invitation-url">Link zaproszeniowy</Label>

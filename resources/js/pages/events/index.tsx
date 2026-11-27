@@ -1,6 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { CalendarDays, ChevronDown, Plus, Users, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import EventShortCode from '@/components/events/event-short-code';
+import EventCodeJoinForm from '@/components/events/event-code-join-form';
 
 type EventItem = {
     id: number;
@@ -13,6 +15,7 @@ type EventItem = {
     activities: string[];
     plan: { date: string | null; starts_at: string | null; place: string | null; activity: string | null } | null;
     invitation_url?: string | null;
+    short_invitation?: string | null;
 };
 
 function formatDate(date: string) {
@@ -25,7 +28,10 @@ function countLabel(count: number, one: string, few: string, many: string) {
     return `${count} ${label}`;
 }
 
-export default function EventsIndex({ events: suppliedEvents }: { events?: EventItem[] }) {
+export default function EventsIndex({ events: suppliedEvents, join_by_code_url = null }: {
+    events?: EventItem[];
+    join_by_code_url?: string | null;
+}) {
     const events = suppliedEvents ?? [];
     const [tab, setTab] = useState<'organizer' | 'member'>('organizer');
 
@@ -59,6 +65,8 @@ export default function EventsIndex({ events: suppliedEvents }: { events?: Event
                     </Link>
                 </div>
 
+                <EventCodeJoinForm lookupUrl={join_by_code_url} />
+
                 <div className="mt-6 flex flex-wrap gap-2" aria-label="Rodzaj wydarzeń">
                     {(['organizer', 'member'] as const).map((role) => (
                         <button key={role} type="button" aria-pressed={tab === role} onClick={() => setTab(role)} className={`rounded-md border px-4 py-2 text-sm font-semibold transition-colors ${tab === role ? 'border-[#ddc5ff] bg-[#ddc5ff] text-[#241738]' : 'border-[#4a3c62] bg-[#251e39] text-[#e8d8ff] hover:bg-[#302643]'}`}>
@@ -86,6 +94,11 @@ export default function EventsIndex({ events: suppliedEvents }: { events?: Event
                                     <Link href={`/events/${event.id}`} className="rounded-md border border-[#4a3c62] px-4 py-2 text-sm font-semibold text-[#e8d8ff] hover:bg-[#302643]">Otwórz wydarzenie</Link>
                                 </div>
 
+                                {event.role === 'organizer' && (
+                                    <div className="mt-4">
+                                        <EventShortCode key={`${event.id}:${event.short_invitation ?? ''}`} id={`short-invitation-${event.id}`} code={event.short_invitation} />
+                                    </div>
+                                )}
                                 {event.role === 'organizer' && event.invitation_url && (
                                     <div className="mt-4 rounded-xl border border-[#4a3c62] bg-[#151225] p-4">
                                         <label htmlFor={`invitation-${event.id}`} className="text-sm font-semibold text-[#ddc5ff]">
@@ -142,4 +155,4 @@ export default function EventsIndex({ events: suppliedEvents }: { events?: Event
     );
 }
 
-EventsIndex.layout = [];
+EventsIndex.layout = [] as [];
