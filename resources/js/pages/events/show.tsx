@@ -1,14 +1,17 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowLeft, CalendarDays, Check, Copy, Link2, MapPin, Sparkles, Users } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import EventAnswersView from '@/components/events/event-answers-view';
+import EventResultsView from '@/components/events/event-results-view';
+import EventPlanView from '@/components/events/event-plan-view';
+import { EventViewNavigation } from '@/components/events/event-screen';
+import type { ActivityOption, EventNotice, EventView, TermResult } from '@/lib/event-workspace';
 import EventShortCode from '@/components/events/event-short-code';
 import EventInvite from './invite';
 import EventDescriptionEditor from '@/components/events/event-description-editor';
 import EventTermsEditor from '@/components/events/event-terms-editor';
-import EventTermVoting from '@/components/events/event-term-voting';
 import type { VotingTerm } from '@/components/events/event-term-voting';
-import EventActivityForm from '@/components/events/event-activity-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,8 +30,13 @@ export type EventDetailsData = {
     invitation_url?: string | null;
     short_invitation?: string | null;
     plan?: {
+        confirmed?: boolean;
+        term_id?: number | null;
+        activity_proposal_id?: number | null;
+        place_proposal_id?: number | null;
         date: string | null;
         starts_at: string | null;
+        ends_at?: string | null;
         place: string | null;
         activity: string | null;
     } | null;
@@ -60,12 +68,10 @@ function EmptyState({ children }: { children: ReactNode }) {
     return <p className="rounded-xl border border-dashed border-[#4a3c62] p-4 text-sm leading-relaxed text-[#c6bad9]">{children}</p>;
 }
 
-function EventDetails({event, updateDescriptionUrl, addTermsUrl, availabilityUrl, addActivityUrl}: {
+function EventDetails({event, updateDescriptionUrl, addTermsUrl}: {
     event: EventDetailsData | null;
     updateDescriptionUrl?: string | null;
     addTermsUrl?: string | null;
-    availabilityUrl?: string | null;
-    addActivityUrl?: string | null;
 }) {
     const [copyStatus, setCopyStatus] = useState<'idle' | 'copying' | 'copied' | 'error'>('idle');
     const invitationInput = useRef<HTMLInputElement>(null);
@@ -74,8 +80,6 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl, availabilityUrl
     const members = event?.members;
     const plan = event?.plan;
     const isOrganizer = event?.role === 'organizer';
-    const canParticipate = isOrganizer || event?.role === 'member';
-    const votingOpen = event?.voting_status === 'open';
     const invitationUrl = isOrganizer ? event?.invitation_url?.trim() : undefined;
     const memberCount = event?.members_count ?? members?.length;
     const status = event
@@ -113,6 +117,8 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl, availabilityUrl
                     {status && <span className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${plan ? 'border-[#285a4b] bg-[#163c33] text-[#a6e6cd]' : 'border-[#4a3c62] bg-[#29203c] text-[#ddc5ff]'}`}>{status}</span>}
                 </div>
 
+                {event && <EventViewNavigation eventId={event.id} active="details" />}
+
                 <div className="mt-7 grid items-start gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
                     <div className="min-w-0 space-y-4">
                         <Section id="event-description" title="O wydarzeniu" icon={<Sparkles size={20} aria-hidden="true" />}>
@@ -124,7 +130,19 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl, availabilityUrl
                         </Section>
 
                         <Section id="event-terms" title="Proponowane terminy" icon={<CalendarDays size={20} aria-hidden="true" />}>
-                            <EventTermVoting terms={terms} canParticipate={canParticipate} isOpen={votingOpen} saveUrl={availabilityUrl} />
+                            {terms.length ? (
+                                <ul className="divide-y divide-[#322b48]">
+                                    {terms.map((term, index) => (
+                                        <li key={term.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0">
+                                            <div>
+                                                <p className="text-sm font-semibold">{formatDate(term.date)}</p>
+                                                <p className="mt-1 text-sm text-[#c6bad9]">{term.starts_at.slice(0, 5)}–{term.ends_at.slice(0, 5)}</p>
+                                            </div>
+                                            <span className="rounded-full bg-[#322743] px-2.5 py-1 text-xs font-semibold text-[#ddc5ff]">Termin {index + 1}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : <EmptyState>Nie ma jeszcze propozycji terminów.</EmptyState>}
                             {isOrganizer && <EventTermsEditor existingTerms={terms} storeUrl={addTermsUrl} />}
                         </Section>
 
@@ -132,7 +150,6 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl, availabilityUrl
                             {activities.length ? (
                                 <ul className="flex flex-wrap gap-2">{activities.map((activity, index) => <li key={`${index}-${activity}`} className="max-w-full rounded-lg border border-[#4a3c62] bg-[#302643] px-3 py-2 text-sm break-words text-[#e8d8ff]">{activity}</li>)}</ul>
                             ) : <EmptyState>Nie ma jeszcze propozycji aktywności.</EmptyState>}
-                            {canParticipate && <EventActivityForm existingActivities={activities} storeUrl={addActivityUrl} isOpen={votingOpen} />}
                         </Section>
                     </div>
 
@@ -192,16 +209,35 @@ function EventDetails({event, updateDescriptionUrl, addTermsUrl, availabilityUrl
     );
 }
 
-export default function EventShow({event = null, join_url = null, update_description_url = null, add_terms_url = null, availability_url = null, add_activity_url = null}: {
+export default function EventShow({event = null, join_url = null, update_description_url = null, add_terms_url = null, availability_url = null, add_activity_url = null, answers_url = null, activity_options, place_options, term_results, notifications, confirm_plan_url = null}: {
     event?: EventDetailsData | null;
     join_url?: string | null;
     update_description_url?: string | null;
     add_terms_url?: string | null;
     availability_url?: string | null;
     add_activity_url?: string | null;
+    answers_url?: string | null;
+    activity_options?: ActivityOption[];
+    place_options?: { id: number; name: string }[];
+    term_results?: TermResult[];
+    notifications?: EventNotice[];
+    confirm_plan_url?: string | null;
 }) {
+    const { url } = usePage();
+    const query = new URL(url, 'http://localhost').searchParams;
+    const requestedView = query.get('view');
+    const activeView: EventView = requestedView === 'answers' || requestedView === 'results' || requestedView === 'plan' ? requestedView : 'details';
+    const requestedTerm = Number(query.get('term'));
+    const selectedTermId = Number.isSafeInteger(requestedTerm) && requestedTerm > 0 ? requestedTerm : undefined;
+
     if (join_url && event && !event.role) {
         return <EventInvite event={event} join_url={join_url} />;
+    }
+
+    if (event && (event.role === 'organizer' || event.role === 'member')) {
+        if (activeView === 'answers') return <EventAnswersView key={event.id} event={event} availabilityUrl={availability_url} answersUrl={answers_url} addActivityUrl={add_activity_url} activityOptions={activity_options} />;
+        if (activeView === 'results') return <EventResultsView key={`${event.id}:${selectedTermId ?? ''}`} event={event} results={term_results} selectedTermId={selectedTermId} />;
+        if (activeView === 'plan') return <EventPlanView key={`${event.id}:${selectedTermId ?? ''}:${query.get('edit') ?? ''}`} event={event} notifications={notifications} activityOptions={activity_options} placeOptions={place_options} confirmUrl={confirm_plan_url} selectedTermId={selectedTermId} startEditing={query.get('edit') === '1'} />;
     }
 
     return (
@@ -210,8 +246,6 @@ export default function EventShow({event = null, join_url = null, update_descrip
             event={event}
             updateDescriptionUrl={update_description_url}
             addTermsUrl={add_terms_url}
-            availabilityUrl={availability_url}
-            addActivityUrl={add_activity_url}
         />
     );
 }
